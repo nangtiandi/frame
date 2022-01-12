@@ -6,7 +6,10 @@ use App\Models\Photo;
 use App\Models\Post;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
+use App\Models\User;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Facades\Image;
@@ -20,11 +23,13 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = Post::when(isset(request()->search),function ($query){
+        $posts = Post::when(Auth::user()->role == 1,function ($query){
+            $query->where('user_id',Auth::id());
+        })->when(isset(request()->search),function ($query){
             $keyword = request()->search;
 
             $query->orWhere('title','like','%'.$keyword.'%')->orWhere('description','like','%'.$keyword.'%');
-        })->with(['user','category'])->latest()->paginate(10);
+        })->with(['user','category','photos'])->latest()->paginate(10);
         return view('post.index',compact('posts'));
     }
 
@@ -35,6 +40,7 @@ class PostController extends Controller
      */
     public function create()
     {
+        Gate::authorize('create',Post::class);
         return view('post.create');
     }
 
@@ -50,26 +56,28 @@ class PostController extends Controller
             'title' => 'required|min:3|unique:posts,title',
             'category' => 'required|exists:categories,id',
             'description'=> 'required|min:10',
-            'photo' => 'required',
-            'photo.*' => 'file|mimes:jpg,png|max:1024'
+            'photos' => 'required',
+            'photos.*' => 'file|mimes:jpg,png|max:1024',
+            'tags' => 'required',
+            'tags.*' => 'exists:tags,id'
         ]);
-//        return $request;
 
         $post = new Post();
         $post->title = $request->title;
-        $post->slug = Str::slug($request->title);
+        $post->slug = $request->title;
         $post->category_id = $request->category;
         $post->description = $request->description;
         $post->excerpt = Str::words($request->description);
         $post->user_id = Auth::id();
         $post->isPublished = '1';
         $post->save();
+        $post->tags()->attach($request->tags);
 
         if (!Storage::exists('public/thumbnail')){
             Storage::makeDirectory('public/thumbnail');
         }
-        if($request->hasFile('photo')){
-            foreach ($request->file('photo') as $photo){
+        if($request->hasFile('photos')){
+            foreach ($request->file('photos') as $photo){
                 $newName = uniqid()."_photo.".$photo->extension();
                 $photo->storeAs('public/photo',$newName);
 
@@ -107,6 +115,13 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
+//        if (! Gate::allows('edit-post', $post)) {
+//            abort(403);
+//        Gate::authorize('edit-post',Post);
+
+//        return $user->id === $post->user_id
+//            ? Response::allow()
+//            : Response::deny('You do not own this post.');
         return view('post.edit',compact('post'));
     }
 
@@ -125,11 +140,13 @@ class PostController extends Controller
             'description'=> 'required|min:10'
         ]);
         $post->title = $request->title;
-        $post->slug = Str::slug($request->title);
+        $post->slug = $request->title;
         $post->category_id = $request->category;
         $post->description = $request->description;
         $post->excerpt = Str::words($request->description);
         $post->update();
+        $post->tags()->detach();
+        $post->tags()->attach($request->tags);
 
         return redirect()->route('post.index')->with('success','Success Updated');
     }
@@ -142,8 +159,19 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
+//        Gate::authorize('delete',$post);
+//        delete photo files
+        foreach ($post->photos as $photo) {
+            Storage::delete('public/photo/'.$photo->name);
+            Storage::delete('public/thumbnail/'.$photo->name);
+        }
+//        delete pivot records
+        $post->tags()->detach();
+//        delete db records
+        $post->photos()->delete();
+//        post delete
         $post->delete();
 
-        return redirect()->back()->with('delete','success Deleted');
+        return redirect()->back()->with('delete','successfully Deleted');
     }
 }

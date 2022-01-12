@@ -30,7 +30,23 @@
                                 <p class="text-danger">{{$message}}</p>
                                 @enderror
                             </div>
+                            <div class="mb-3">
+                                <label for="">Post Tag</label>
+                                <br>
+                                @foreach(App\Models\Tag::all() as $tag)
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" {{in_array($tag->id,old('tags',$post->tags->pluck('id')->toArray())) ? 'checked' : ''}} type="checkbox" name="tags[]" id="tag{{$tag->id}}" value="{{$tag->id}}">
+                                        <label class="form-check-label" for="tag{{$tag->id}}">{{$tag->tag}}</label>
 
+                                    </div>
+                                @endforeach
+                                @error('tags')
+                                <p class="text-danger">{{$message}}</p>
+                                @enderror
+                                @error('tags.*')
+                                <p class="text-danger">{{$message}}</p>
+                                @enderror
+                            </div>
                             <div class="mb-3">
                                 <label for="" class="form-label">Post Description</label>
                                 <textarea name="description" rows="6" class="form-control">{{old('description',$post->description)}}</textarea>
@@ -61,7 +77,7 @@
                             </form>
                         </div>
                         <div class="mb-3">
-                            @forelse($post->photo as $photo)
+                            @forelse($post->photos as $photo)
                                 <div class="d-inline-block position-relative" style="width: 100px;height: 100px">
                                     <img src="{{asset('storage/thumbnail/'.$photo->name)}}" alt="" height="80" class="position-absolute">
                                     <form action="{{route('photo.destroy',$photo->id)}}" method="post" >

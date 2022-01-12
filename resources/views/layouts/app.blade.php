@@ -33,22 +33,26 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <!-- Left Side Of Navbar -->
                     <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a href="{{route('home')}}" class="nav-link {{request()->url() == route('home') ? 'active': ''}}">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{route('category.create')}}" class="nav-link {{request()->url() == route('category.create') ? 'active' : ''}}">Manage Category</a>
-                        </li>
-                        <li class="dropdown">
-                            <a class="nav-link dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                                Manage Post
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-                                <li><a class="dropdown-item" href="{{route('post.create')}}">Post</a></li>
-                                <li><a class="dropdown-item" href="{{route('post.index')}}">Post List</a></li>
-                                <li><a class="dropdown-item" href="#">Something else here</a></li>
-                            </ul>
-                        </li>
+                        @auth
+                            <li class="nav-item">
+                                <a href="{{route('home')}}" class="nav-link {{request()->url() == route('home') ? 'active': ''}}">Home</a>
+                            </li>
+                            @isAdmin
+                            <li class="nav-item">
+                                <a href="{{route('category.create')}}" class="nav-link {{request()->url() == route('category.create') ? 'active' : ''}}">Manage Category</a>
+                            </li>
+                            @endisAdmin
+                            <li class="dropdown">
+                                <a class="nav-link dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                    Manage Post
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                                    <li><a class="dropdown-item" href="{{route('post.create')}}">Post</a></li>
+                                    <li><a class="dropdown-item" href="{{route('post.index')}}">Post List</a></li>
+                                    <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                </ul>
+                            </li>
+                        @endauth
                     </ul>
 
                     <!-- Right Side Of Navbar -->

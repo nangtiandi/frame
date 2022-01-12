@@ -16,8 +16,12 @@
                                 <tr>
                                     <th>#</th>
                                     <th class="w-25">Title</th>
+                                    @if(Auth::user()->role == 0)
                                     <th><i class="fas fa-user-alt"></i>Owner</th>
+                                    @endif
+                                    <th>Post Image</th>
                                     <th>Post Item</th>
+                                    <th>Post Tag</th>
                                     <th>Created At</th>
                                     <th>Option</th>
                                 </tr>
@@ -35,14 +39,17 @@
                                     </form>
                                 </div>
                             </div>
+
                             <tbody>
                                 @forelse($posts as $post)
                                     <tr>
                                         <td>{{$post->id}}</td>
                                         <td>{{$post->title}}</td>
+                                        @if(Auth::user()->role == 0)
                                         <td>{{$post->user->name}}</td>
+                                        @endif
                                         <td>
-                                            @forelse($post->photo as $photo)
+                                            @forelse($post->photos()->latest('id')->limit(3)->get() as $photo)
                                                 <a class="my-link" data-gall="gall{{$post->id}}" data-autoplay="true" data-maxwidth="500px" href="{{asset('storage/photo/'.$photo->name)}}"><img src="{{asset('storage/thumbnail/'.$photo->name)}}" height="40" alt="image alt"/></a>
 {{--                                                <img src="{{asset('storage/thumbnail/'.$photo->name)}}" alt="" height="40">--}}
                                             @empty
@@ -51,22 +58,23 @@
                                         </td>
                                         <td>{{$post->category->category}}</td>
                                         <td>
-                                            <p class="m-0">
-                                                <i class="fas fa-calendar"></i>
-                                                {{$post->created_at->format('d / m / Y')}}
-                                                ||
-                                                <i class="fas fa-clock"></i>
-                                                {{$post->created_at->format('h:i:a')}}
-                                            </p>
+                                            @foreach($post->tags as $tag)
+                                                <span class="badge bg-secondary">{{$tag->tag}}</span>
+                                            @endforeach
+                                        </td>
+                                        <td>
+                                            {!! $post->show_created_at !!}
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group">
                                                 <a href="{{route('post.show',$post->id)}}" class="btn btn-outline-info">
                                                     <i class="fas fa-info"></i>
                                                 </a>
-                                                <a href="{{route('post.edit',$post->id)}}" class="btn btn-outline-warning">
-                                                    <i class="fas fa-pencil-alt"></i>
-                                                </a>
+{{--                                                @can('edit-post',$post)--}}
+                                                    <a href="{{route('post.edit',$post->id)}}" class="btn btn-outline-warning">
+                                                        <i class="fas fa-pencil-alt"></i>
+                                                    </a>
+{{--                                                @endcan--}}
                                                 <button form="deletePost{{$post->id}}" class="btn btn-outline-danger">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
