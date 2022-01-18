@@ -8,7 +8,9 @@ use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -61,21 +63,24 @@ class PostController extends Controller
             'tags' => 'required',
             'tags.*' => 'exists:tags,id'
         ]);
-
-        $post = new Post();
-        $post->title = $request->title;
-        $post->slug = $request->title;
-        $post->category_id = $request->category;
-        $post->description = $request->description;
-        $post->excerpt = Str::words($request->description);
-        $post->user_id = Auth::id();
-        $post->isPublished = '1';
-        $post->save();
-        $post->tags()->attach($request->tags);
-
+//        DB::transaction(function () use($request){
+//        DB::beginTransaction();
+//        try{
         if (!Storage::exists('public/thumbnail')){
             Storage::makeDirectory('public/thumbnail');
         }
+
+            $post = new Post();
+            $post->title = $request->title;
+            $post->slug = $request->title;
+            $post->category_id = $request->category;
+            $post->description = $request->description;
+            $post->excerpt = Str::words($request->description);
+            $post->user_id = Auth::id();
+            $post->isPublished = '1';
+            $post->save();
+            $post->tags()->attach($request->tags);
+
         if($request->hasFile('photos')){
             foreach ($request->file('photos') as $photo){
                 $newName = uniqid()."_photo.".$photo->extension();
@@ -92,8 +97,15 @@ class PostController extends Controller
                 $photo->save();
             }
         }
-
+//            DB::commit();
+//
+//        }catch (\Exception $e){
+//            DB::rollBack();
+//            throw $e;
+//        }
+//        });
         return redirect()->route('post.index')->with('success','Success Created');
+
     }
 
     /**
